@@ -11,6 +11,49 @@ This repository is designed to run primarily local-first on a single machine and
 
 Note: `Makefile` uses `.venv/bin/python` by default (`PYTHON ?= .venv/bin/python`).
 
+## 0) Dashboard Gallery (12 Screenshots)
+
+<details>
+<summary>Click to expand all dashboard screenshots</summary>
+
+### Screenshot 1
+![Dashboard 1](assets/screenshots/1.png)
+
+### Screenshot 2
+![Dashboard 2](assets/screenshots/2.png)
+
+### Screenshot 3
+![Dashboard 3](assets/screenshots/3.png)
+
+### Screenshot 4
+![Dashboard 4](assets/screenshots/4.png)
+
+### Screenshot 5
+![Dashboard 5](assets/screenshots/5.png)
+
+### Screenshot 6
+![Dashboard 6](assets/screenshots/6.png)
+
+### Screenshot 7
+![Dashboard 7](assets/screenshots/7.png)
+
+### Screenshot 8
+![Dashboard 8](assets/screenshots/8.png)
+
+### Screenshot 9
+![Dashboard 9](assets/screenshots/9.png)
+
+### Screenshot 10
+![Dashboard 10](assets/screenshots/10.png)
+
+### Screenshot 11
+![Dashboard 11](assets/screenshots/11.png)
+
+### Screenshot 12
+![Dashboard 12](assets/screenshots/12.png)
+
+</details>
+
 ## 1) What this project implements
 
 ### 1.1 Core objective
