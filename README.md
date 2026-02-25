@@ -13,9 +13,6 @@ Note: `Makefile` uses `.venv/bin/python` by default (`PYTHON ?= .venv/bin/python
 
 ## 0) Dashboard Gallery (12 Screenshots)
 
-<details>
-<summary>Click to expand all dashboard screenshots</summary>
-
 ### Screenshot 1
 ![Dashboard 1](assets/screenshots/1.png)
 
@@ -51,8 +48,6 @@ Note: `Makefile` uses `.venv/bin/python` by default (`PYTHON ?= .venv/bin/python
 
 ### Screenshot 12
 ![Dashboard 12](assets/screenshots/12.png)
-
-</details>
 
 ## 1) What this project implements
 
