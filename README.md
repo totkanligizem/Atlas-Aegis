@@ -1,4 +1,4 @@
-# Robust Aerial Detection + MOT + Risk Banding (Local-First, <=15 USD)
+# Atlas Aegis: Robust Aerial Detection + MOT + Risk Banding (Local-First)
 
 End-to-end R&D stack for small-object aerial perception:
 - detector training and robustness evaluation (YOLOv8n / YOLOv8s),
