@@ -1,0 +1,14 @@
+weights:
+  roi_dwell: 1.4
+  approach: 1.0
+  duration: 0.8
+  conf_mean: 0.6
+  conf_stability: 0.5
+  occlusion: 0.3
+bias: -1.8
+bands:
+  green_max: 39.999
+  yellow_max: 69.999
+  red_min: 70.0
+event:
+  min_frames_in_roi: 10

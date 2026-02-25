@@ -1,0 +1,17 @@
+name: mode_fast
+model: weights/yolov8n.pt
+imgsz: 640
+batch: 12
+target_fps: 20
+target_latency_ms: 50
+run_name: visdrone_fast_baseline
+epochs: 30
+workers: 4
+patience: 20
+cache: false
+pretrained: true
+optimizer: auto
+seed: 42
+amp: true
+project: artifacts/detect
+output_report: reports/train_detector_fast_report.json

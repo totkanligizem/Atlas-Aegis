@@ -1,0 +1,60 @@
+# -------------------------------------------------------------------
+# Python / tooling
+# -------------------------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# -------------------------------------------------------------------
+# OS / local editor
+# -------------------------------------------------------------------
+.DS_Store
+.cache/
+
+# -------------------------------------------------------------------
+# Local env / secrets / credentials
+# -------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets/
+credentials/
+*credentials*.json
+*service-account*.json
+
+# -------------------------------------------------------------------
+# Logs / databases / local experiment outputs
+# -------------------------------------------------------------------
+*.log
+*.db
+*.sqlite
+*.parquet
+logs/
+runs/
+
+# -------------------------------------------------------------------
+# Heavy local datasets and model weights (do not commit raw/derived data)
+# -------------------------------------------------------------------
+data/manual/
+data/raw/
+data/processed/
+data/mot/
+weights/
+
+# -------------------------------------------------------------------
+# Generated reports (keep manually curated docs outside this pattern)
+# -------------------------------------------------------------------
+reports/*.json
+reports/*.md
+reports/*.env

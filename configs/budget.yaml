@@ -1,0 +1,25 @@
+currency: USD
+soft_warning_usd: 8.0
+high_warning_usd: 12.0
+kill_switch_usd: 14.0
+hard_cap_usd: 15.0
+policy:
+  local_first: true
+  no_frame_level_api_calls: true
+  block_api_when_kill_switch_reached: true
+providers:
+  openai:
+    enabled: true
+    estimated_usd_spent: 0.0
+  gemini:
+    enabled: true
+    estimated_usd_spent: 0.0
+  bigquery:
+    enabled: false
+    max_bytes_billed: 1000000000
+    require_dry_run: true
+gcs:
+  enabled: false
+  temp_ttl_days: 7
+  final_ttl_days: 90
+  block_egress: true

@@ -1,0 +1,18 @@
+source: data/manual/visdrone/VisDrone2019-MOT-val/sequences/uav0000086_00000_v
+dataset_key: visdrone2019_mot
+model: runs/detect/artifacts/detect/visdrone_highrecall_blur_rescue_20260225_172853/weights/best.pt
+tracker: configs/trackers/bytetrack.yaml
+conf: 0.20
+iou: 0.60
+imgsz: 960
+device: ""
+max_frames: 300
+track_ttl_frames: 45
+risk_config: configs/risk.yaml
+output_jsonl: logs/track_risk_visdrone_mot_val.jsonl
+output_report: reports/track_risk_visdrone_mot_val_report.json
+roi:
+  x1: 0.20
+  y1: 0.20
+  x2: 0.80
+  y2: 0.80

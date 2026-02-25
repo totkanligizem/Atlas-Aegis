@@ -1,0 +1,36 @@
+source: data/manual/visdrone/VisDrone2019-MOT-val/sequences/uav0000086_00000_v
+dataset_key: visdrone2019_mot
+conf: 0.20
+iou: 0.60
+max_frames: 120
+frame_stride: 2
+warmup_frames: 5
+formats:
+  - onnx
+  - coreml
+export_dir: runs/export_bench
+output_report: reports/export_benchmark_report.json
+output_md: reports/export_benchmark_report.md
+profiles:
+  - name: fast_yolov8n
+    model: weights/yolov8n.pt
+    imgsz: 640
+    device: cpu
+    target_fps: 20
+    target_latency_ms: 50
+    target_p95_latency_ms: 70
+    backend_requirements:
+      pytorch: required
+      onnx: optional
+      coreml: optional
+  - name: highrecall_yolov8s
+    model: weights/yolov8s.pt
+    imgsz: 960
+    device: cpu
+    target_fps: 12
+    target_latency_ms: 80
+    target_p95_latency_ms: 120
+    backend_requirements:
+      pytorch: required
+      onnx: optional
+      coreml: optional

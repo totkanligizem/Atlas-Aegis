@@ -1,0 +1,540 @@
+Atlas Aegis
+Robust Aerial Detection + MOT + Risk Banding
+Master Kapanis Raporu (Ar-Ge)
+Tarih: 2026-02-25
+
+====================================================================
+0) Rapor Notu ve Gizlilik Siniri
+====================================================================
+- Bu rapor teknik Ar-Ge kapsamindaki tum ana kararlar, metrikler, boru hatti,
+  araclar, veri envanteri, riskler ve cikarimlari kapsar.
+- Guvenlik geregi herhangi bir API anahtari, token, sifre, cihaz kimligi,
+  kisisel credential veya gizli anahtar bu rapora dahil edilmemistir.
+- Lisans olarak ticari acidan belirsiz setler Ar-Ge hattinda tutulmustur;
+  production kullanimi ayrik legal gate'e baglanmistir.
+
+====================================================================
+1) Proje Adi, Amac ve Vizyon
+====================================================================
+Proje kod adi:
+Atlas Aegis
+
+Ana amac:
+Drone/overhead goruntulerde kucuk hedefleri guvenilir sekilde tespit etmek,
+hedefleri kareler boyunca takip etmek (MOT) ve takipten uretilen ozelliklerle
+aciklanabilir bir risk skoru + Green/Yellow/Red alarm bandi ureten
+uctan uca bir sistem kurmak.
+
+Neyi hedefledik:
+1. Sadece tek metrikli (mAP benzeri) degil, robust/multi-gate odakli kalite.
+2. Corruption matrix altinda olculebilir dayaniklilik.
+3. MOT tarafinda yalnizca recall degil, IDSW/HOTA/DetA/AssA dengesi.
+4. Event lead-time ile erken uyari davraniisini olcmek.
+5. <=15 USD nakit politikasi ile local-first calisma.
+6. Legal gate + budget guard ile release risklerini izole etmek.
+
+====================================================================
+2) Kapsam ve Kapsam Disi
+====================================================================
+Kapsam ici:
+- Detector egitimi (YOLOv8n/YOLOv8s), robust fine-tune varyantlari.
+- Fast/Candidate/Full (41 kosul) degerlendirme merdiveni.
+- Track + risk skorlama + alarm event cikisi.
+- MOT metrikleri (MOTA, precision/recall, IDSW, HOTA/AssA/DetA).
+- Latency/FPS ve export backend benchmark gate'leri.
+- Dashboard (Streamlit) ile somut gorsellestirme.
+- Legal/budget guard runtime entegrasyonu.
+
+Kapsam disi (bu fazda):
+- Tam production deployment (CI/CD + cloud autoscale + SLA/SRE).
+- Ticari lisansi net olmayan setlerle production model yayinlama.
+- MLOps'in tam cloud-native orkestra edilmis versiyonu.
+
+====================================================================
+3) Uctan Uca Is Akisi (Workflow ve Pipeline)
+====================================================================
+Yuksek seviye akis:
+
+[Dataset Acquisition]
+      |
+      v
+[Data Prep + Label Conversion + Split Hygiene]
+      |
+      v
+[Detector Train Loops]
+  - fast baseline (YOLOv8n)
+  - high-recall (YOLOv8s)
+  - corruption-aware branches
+  - poisson-focus branches
+  - blur-rescue branch
+      |
+      v
+[Robustness Eval Ladder]
+  - Fast loop (5 kosul)
+  - Candidate loop (9 kosul)
+  - Full loop (41 kosul)
+      |
+      +--------------------+
+      |                    |
+      v                    v
+[Track+Risk Inference]   [Latency/Export Bench]
+      |                    |
+      v                    v
+[MOT Build + MOT Eval]   [Gate PASS/FAIL]
+      |
+      v
+[Profile Sweep + Release Profile Selection]
+      |
+      v
+[Pre-Release Check + Dashboard + Artefact Set]
+
+Operasyonel adimlarin omurgasi Make target'larina baglandi:
+- detector train/eval loop'lari
+- mot build/eval/sweep/profile gate
+- benchmark, pre-release, release
+
+====================================================================
+4) Metodoloji (Modeller, Metrikler, Yontemler)
+====================================================================
+4.1 Detector modelleri
+- Fast mode: YOLOv8n
+- High-recall mode: YOLOv8s
+- Blur/poisson dayanimi icin hedefli veri karmasiyla iterative fine-tune
+
+4.2 Small-object standardi
+- small bbox tanimi:
+  - bbox_area < 32^2 pixel veya
+  - min(width,height) < 16 pixel
+- Ana kritik metrik: recall_small
+
+4.3 Robustness metodolojisi
+- 3 asamali merdiven:
+  1) Fast: clean + cekirdek S3 kosullari
+  2) Candidate: clean + 8 corruption'da S3
+  3) Full: clean + 8 corruption x s1..s5 = 41 kosul
+- Corruption tipleri:
+  blur, low_light, jpeg, gauss, poisson, dropout, fog, downsample
+
+4.4 Risk skoru (explainable)
+- Track-level ozellikler:
+  duration_frames, conf_mean, conf_std, bbox_area_slope,
+  roi_dwell, occlusion_count
+- Formul:
+  risk = 100 * sigmoid(z)
+  z = 1.4*r + 1.0*a + 0.8*p + 0.6*c + 0.5*cs + 0.3*o - 1.8
+  burada:
+  p = clip(duration/30)
+  c = clip(conf_mean)
+  cs = 1 - clip(conf_std/0.25)
+  a = sigmoid(area_slope/0.02)
+  r = clip(roi_dwell/30)
+  o = clip(occlusion/10)
+- Bandlar:
+  GREEN <= 39.999
+  YELLOW <= 69.999
+  RED >= 70
+
+4.5 MOT degerlendirme yontemi
+- Klasik MOT metrikleri:
+  precision, recall, MOTA, MOTP(IoU), IDSW
+- Ek kalite metrikleri:
+  HOTA, AssA, DetA (+ alpha curve)
+- Event lead-time:
+  GT event girisi ile pred event alarm zamanlari arasindaki fark dagilimi
+
+4.6 Gate felsefesi
+Detector gate:
+- clean_recall_small_min >= 0.35
+- clean_recall_min >= 0.45
+- s3_recall_small_drop_max <= 0.25
+
+MOT release gate (seq2 odakli):
+- recall >= 0.333
+- HOTA >= 0.300
+- MOTA >= -0.080
+
+Latency gate (required profile'lar):
+- fast_cpu_yolov8n: fps >= 20, median_latency <= 50ms, p95 <= 70ms
+- highrecall_cpu_yolov8s: fps >= 12, median_latency <= 80ms, p95 <= 120ms
+
+Export gate:
+- Required backend'ler PASS olmali (pytorch zorunlu)
+- Optional backend'ler (onnx/coreml) yoksa SKIPPED olabilir
+
+====================================================================
+5) Araclar ve Teknoloji Stagi
+====================================================================
+Ana stack:
+- Python (3.12)
+- Ultralytics YOLOv8
+- Torch
+- OpenCV
+- DuckDB/SQLite benzeri metrik depolama katmani
+- Pandas
+- Streamlit
+- PyYAML
+
+Proje bilesenleri:
+- scripts/: 00..28 arasi otomasyon scriptleri
+- src/aerial_stack/: core modul katmani
+  - track_risk, risk, mot_eval, benchmark,
+    legal_gate, budget_runtime, metrics_store, corruptions
+- configs/: detector/mot/benchmark/release konfigleri
+- app/dashboard.py: tum raporlari tek ekranda gosteren UI
+- governance/: legal_status + data governance dokumanlari
+
+====================================================================
+6) Repository Yapisi (Ozet)
+====================================================================
+- app/
+- configs/
+- data/
+  - manual/, raw/, processed/, mot/
+- governance/
+- logs/
+- reports/
+- runs/
+- scripts/
+- src/aerial_stack/
+- Makefile, README.md, requirements.txt, pyproject.toml
+
+====================================================================
+7) Veri Seti Envanteri (Tur, Boyut, Kullanim)
+====================================================================
+7.1 Ham veri kokleri (disk)
+- data/manual: 33G
+- data/raw: 3.8G
+- data/processed: 23G
+- data/mot: 6.6M
+
+Not:
+- data/raw/visdrone -> data/manual/visdrone symlink
+- data/raw/dota     -> data/manual/dota symlink
+
+7.2 VisDrone envanteri
+- VisDrone2019-DET-train: 1.5G
+  tip: image detection
+  6471 image, 6471 annotation
+- VisDrone2019-DET-val: 81M
+  tip: image detection
+  548 image, 548 annotation
+- VisDrone2019-DET-test-dev: 306M
+  tip: image detection
+  1610 image, 1610 annotation
+
+- VisDrone2019-MOT-train: 7.6G
+  tip: video sequence MOT
+  56 sequence, 24201 frame, 56 annotation dosyasi
+- VisDrone2019-MOT-val: 1.5G
+  tip: video sequence MOT
+  7 sequence, 2846 frame, 7 annotation dosyasi
+- VisDrone2019-MOT-test-dev: 2.2G
+  tip: video sequence MOT
+  17 sequence, 6635 frame, 17 annotation dosyasi
+
+7.3 UAVDT envanteri
+- train: 2.9G, 3212 dosya
+- val: 468M, 543 dosya
+- test: 407M, 544 dosya
+- toplam goruntu: 2488 jpg
+- toplam annotation/metin: 1809 txt
+
+7.4 DOTA envanteri (mevcut indirilen parcali yapi)
+- images: 2.1G
+- images-2: 3.2G
+- images-3: 3.0G
+- images-4: 3.3G
+- images-5: 3.5G
+- images-6: 4.7G
+- labelTxt turevleri + metadata: MB mertebesi
+- toplam: 2806 png, 1832 txt, 8 zip
+
+7.5 Islenmis detector dataset turevleri
+- visdrone_det: 39M | train 6471 / val 548
+- visdrone_det_smoke: 3.6M | train 512 / val 120
+- visdrone_det_corruptaware: 3.6G | train 6000 / val 548
+- visdrone_det_corruptaware_quick: 1.1G | train 1800 / val 548
+- visdrone_det_poisson_focus_quick: 2.0G | train 2400 / val 548
+- visdrone_det_poisson_focus_mid: 4.0G | train 4800 / val 548
+- visdrone_det_poisson_focus_1600: 7.6G | train 8000 / val 548
+- visdrone_det_blur_rescue: 5.0G | train 7000 / val 548
+
+7.6 Lisans/Legal durum (policy)
+- visdrone2019_det: research=evet, commercial=hayir
+- visdrone2019_mot: research=evet, commercial=hayir
+- uavdt: research=evet, commercial=evet (attribution kontrolu ile)
+- dota/xview/soda_a: current policy'de commercial=hayir
+
+====================================================================
+8) Ne Yaptik? (Baslangictan Son Duruma)
+====================================================================
+8.1 Altyapi ve governance
+- Ortam kontrolu, data lint, smoke calismalari kuruldu.
+- Budget guard runtime (ledger + event log) entegre edildi.
+- Legal gate runtime kontrolleri ana script girislerine eklendi.
+- Ar-Ge ve production lisans ayrimi policy seviyesinde netlestirildi.
+
+8.2 Detector Ar-Ge ilerleyisi
+- Fast kol (YOLOv8n) egitildi/olculdu.
+- High-recall kol (YOLOv8s) egitildi/olculdu.
+- Ilk adaylarda clean iyi olsa da S3 blur/poisson dususu nedeniyle gate fail.
+- Corruption-aware ve poisson odakli ara turlar yapildi.
+- Son tur blur-rescue veri karmasiyla candidate ve full41 gate kapatildi.
+
+8.3 MOT + risk ilerleyisi
+- Gercek VisDrone MOT val sequence'lerinde track+risk kosuldu.
+- ByteTrack bagimliligi yoklugunda iou-fallback ile calisabilirlik korundu.
+- Post-filter sweep (balanced/recall/class-map) ile seq2 genel kalite iyilestirildi.
+- Release profile secimi otomatik gate ile recall profile'a baglandi.
+- Lead-time hesaplari GT event olusturma + require-gt-events akisiyla
+  sessiz eksik-data riski kapatilarak tekrarlandi.
+
+8.4 Performans/Release hazirligi
+- Latency benchmark gate PASS.
+- Export benchmark gate PASS (required backend bazinda).
+- Pre-release toplu gate PASS.
+
+====================================================================
+9) Ciktilar ve Sonuclar (Sayisal Ozet)
+====================================================================
+9.1 Detector sonuc ozet tablosu
+
+A) onceki baseline/fail durumlari
+- fast_full41_ep3:
+  clean_recall=0.4209, clean_recall_small=0.3276,
+  s3_drop_max=0.5762, gate=FAIL
+- highrecall_full41_ep1:
+  clean_recall=0.5932, clean_recall_small=0.5108,
+  s3_drop_max=0.7163, gate=FAIL
+- poisson_mid_full41:
+  clean_recall=0.5875, clean_recall_small=0.5004,
+  s3_drop_max=0.2574, gate=FAIL (sinira cok yakin)
+
+B) final kazanan (blur-rescue)
+- candidate (9 kosul):
+  clean_recall=0.6240
+  clean_recall_small=0.5512
+  s3_drop_max=0.2467
+  gate=PASS
+- full41 (41 kosul):
+  clean_recall=0.6240
+  clean_recall_small=0.5512
+  s3_drop_max=0.2304
+  gate=PASS
+
+Kritik yorum:
+- Blur/poisson kaynakli dayaniklilik darbozagi hedefli data kurgusuyla asildi.
+
+9.2 MOT ve profile gate sonuclari
+A) Release profile gate:
+- selected_profile: recall
+- objective: hota
+- gate: PASS
+
+B) Seq2 release gate metrikleri (recall profile):
+- precision: 0.4777
+- recall: 0.3341
+- MOTA: -0.0592
+- HOTA: 0.3047
+- IDSW: 410
+- tum gate check'leri PASS
+
+C) Seq1/Seq2 lead-time raporlari (event dosyalariyla):
+- seq1 (with events):
+  precision=0.6348, recall=0.4514, MOTA=0.1830, IDSW=116
+  matched_tracks=21, median lead-time=-5, mean=8.05
+- seq2 (with events):
+  precision=0.4505, recall=0.3263, MOTA=-0.0998, IDSW=412
+  matched_tracks=27, median lead-time=69, mean=76.37
+
+D) Track-risk event uretimi:
+- seq1: 173 event (94 event_start, 79 alarm_red)
+- seq2: 651 event (374 event_start, 277 alarm_red)
+
+9.3 Error slice (seq2 - seq1)
+- MOTA delta: -0.2411
+- precision delta: -0.1574
+- recall delta: -0.1086
+- IDSW delta: +322
+- FP delta: +1923
+- FN delta: +2250
+
+9.4 Latency benchmark sonucu
+- overall gate: PASS (required 2/2 profile)
+- fast_cpu_yolov8n:
+  fps_mean=47.51, median_latency=20.75ms, p95=23.42ms, PASS
+- highrecall_cpu_yolov8s:
+  fps_mean=16.13, median_latency=61.58ms, p95=67.30ms, PASS
+- fast_mps_yolov8n:
+  mps available degil -> SKIPPED (optional)
+
+9.5 Export benchmark sonucu
+- overall gate: PASS (profiles 2/2 PASS)
+- zorunlu pytorch backend: PASS
+- onnx/coreml: optional, modul yoklugu sebebiyle SKIPPED
+
+9.6 Toplu release gate sonucu
+- pre_release_check_report: status=PASS
+- strict_mode=false
+- release_gate: PASS, selected_profile=recall
+
+9.7 Butce/ledger sonucu
+- budget_ledger spent_usd: 0.0
+- status: ok
+- budget policy esikleri:
+  soft=8, high=12, kill-switch=14, hard-cap=15
+
+9.8 Metrik veritabani birikimi
+- runs toplam: 82
+- metrics toplam: 7346
+- pipeline dagilimi:
+  corruption_benchmark=50
+  detector_eval=32
+
+====================================================================
+10) SWOT Analizi
+====================================================================
+Strengths (Guclu yonler)
+1. Local-first + budget guard mimarisi ile maliyet kontrolu cok guclu.
+2. Detector tarafinda 41-kosul full gate kapanmis durumda.
+3. Multi-gate kalite kulturu: detector + MOT + latency + export + release.
+4. Explainable risk skoru ve event lead-time ile yalnizca detection degil,
+   operasyonel karar katmani da olusturulmus.
+5. Dashboard ile somut gosterilebilir portfoy ciktilari mevcut.
+
+Weaknesses (Zayif yonler)
+1. Seq2 MOT kalitesi hala seq1'e gore anlamli derecede dusuk.
+2. ByteTrack'in tam hizi/kalitesi lap bagimliligina bagli; su an fallback aktif.
+3. ONNX/CoreML export yolu optional ve kurulum eksikligi sebebiyle olculemedi.
+4. Lead-time dagiliminda sequence'e gore degiskenlik yuksek.
+
+Opportunities (Firsatlar)
+1. lap/ByteTrack tam etkinlestirme ile IDSW/FP stabilitesinde kazanc.
+2. Seq2 odakli per-class/per-motion tuning ile MOT kapilarini guclendirme.
+3. Production-data sprint ile ticari lisansli validasyon seti olusturma.
+4. ONNX/CoreML yolunu acip edge deploy hikayesini guclendirme.
+5. Dashboard'i demo-video + KPI story ile GitHub/LinkedIn vitrini yapma.
+
+Threats (Tehditler)
+1. Lisansi net olmayan veriyle production iddiasi yapilmasi.
+2. Seq2 benzeri zor sahnelerde recall-stability tradeoff'unun tekrar bozulmasi.
+3. Cloud tarafi erken acilirsa over-engineering + maliyet riski.
+4. Otomatik rapor artefactlarinda makineye ozel path sizmasi (hijyen riski).
+
+====================================================================
+11) Karsilasilan Zorluklar, Neyi Yapmamak Gerekirdi, Nasil Duzelttik
+====================================================================
+11.1 Zorluk: compute zamani ve iterasyon hizi
+- Risk: her iterasyonda full 41 kosul kosmak takvimi kitliyordu.
+- Dogru olmayan yol: tum deneyleri ayni agirlikta full kosmak.
+- Duzeltme:
+  3-asamali eval merdiveni (fast/candidate/full) uygulandi.
+- Sonuc:
+  hizli geri bildirim + sadece finalist modellerde full gece kosusu.
+
+11.2 Zorluk: clean iyi, robust kotu (ozellikle blur/poisson)
+- Risk: clean recall yuksek olmasina ragmen gate fail.
+- Dogru olmayan yol: sadece threshold oynamasiyla sorunu cozmek.
+- Duzeltme:
+  hedefli corruption karmasi (blur-rescue) ile veri/egitim tarafi revize edildi.
+- Sonuc:
+  candidate PASS + full41 PASS.
+
+11.3 Zorluk: MOT seq2 genelleme acigi
+- Risk: seq1'de iyi, seq2'de zayif stabilite.
+- Dogru olmayan yol: tek sequence'e gore parametre kilitlemek.
+- Duzeltme:
+  multi-sequence sweep + class-map calibration + profile gate.
+- Sonuc:
+  recall profile release gate PASS; gap azaldi ama tamamen kapanmadi.
+
+11.4 Zorluk: ByteTrack bagimlilik problemi (lap)
+- Risk: takip akisinin tamamen durmasi.
+- Dogru olmayan yol: bagimlilik yoksa pipeline'i durdurmak.
+- Duzeltme:
+  otomatik iou-fallback tracking backend eklendi.
+- Sonuc:
+  pipeline calismaya devam etti, metrik uretilmesi kesilmedi.
+
+11.5 Zorluk: event degerlendirmede sessiz veri eksigi riski
+- Risk: GT event dosyasi eksikken fark edilmeden skor hesaplamak.
+- Dogru olmayan yol: eksik event dosyasini toleransla gecmek.
+- Duzeltme:
+  require-gt-events ve warning mekanizmasi eklendi.
+- Sonuc:
+  lead-time akisi daha guvenilir hale geldi.
+
+11.6 Zorluk: legal ve budget kontrolunun dokumanda kalmasi
+- Risk: niyet var ama runtime enforcement yok.
+- Dogru olmayan yol: sadece rapor seviyesi policy.
+- Duzeltme:
+  legal_gate + budget_runtime ana entrypoint script'lere entegre edildi.
+- Sonuc:
+  run aninda kontrol eden, loglayan ve bloklayabilen yapi aktif.
+
+====================================================================
+12) Dashboard ve Somut Sunulabilir Ciktilar
+====================================================================
+Dashboard uygulamasi:
+- app/dashboard.py (Streamlit)
+
+Gosterilen ana kartlar:
+- detector gate ve condition bazli metric tablolari
+- track/risk frame ve band dagilimlari
+- MOT KPI kartlari (MOTA, HOTA, AssA, DetA, precision, recall, IDSW)
+- lead-time ozetleri
+- latency benchmark kartlari
+- export backend kartlari
+- post-filter/profile compare ozetleri
+
+Yayina uygun somut artefact seti:
+- detector closure raporlari
+- mot postfilter + profile release raporlari
+- pre-release check raporu
+- latency/export benchmark raporlari
+- bu master kapanis raporu
+
+====================================================================
+13) Guvenlik, Gizlilik, Legal Uyum
+====================================================================
+- Raporlama ve README tarafinda gizli credential bulunmamali.
+- API key/token gibi hassas degerler dosyalarda tutulmamali,
+  environment variable veya gizli manager uzerinden saglanmali.
+- Lisans belirsiz setlerle production training veya commercial yayin yapilmamali.
+- Ar-Ge ve production dataset hatti ayri tutulmali.
+
+====================================================================
+14) Projenin Simdiki Durumu ve Final Yargi
+====================================================================
+Ar-Ge final durumu (teknik):
+- Detector robust gate: PASS (full41 dahil)
+- MOT release profile gate: PASS (recall profile)
+- Latency gate: PASS
+- Export gate: PASS (required backend)
+- Pre-release gate: PASS
+- Budget policy: PASS (spent 0.0, guard active)
+
+Genel yargi:
+- Proje Ar-Ge hedefi acisindan basariyla tamamlanmis ve
+  "sunulabilir, olculebilir, gate-driven" bir yapiya donusmustur.
+- Production'a gecis icin kalan esas konu, lisansli production data sprint'i ve
+  seq2 benzeri zor senaryolarda MOT stabilizasyonunun bir tur daha guclendirilmesidir.
+
+====================================================================
+15) Bundan Sonraki En Dogru Profesyonel Adimlar
+====================================================================
+1. ByteTrack tam yolunu ac (lap kurulumu) ve ayni seq1/seq2 benchmark'i yeniden kos.
+2. ONNX/CoreML backendlerini kurup export benchmark'ta olcumlu PASS al.
+3. Production-data sprint'i operasyonel checklist ile baslat:
+   izin, anonimlestirme, retention, erisim kontrolu.
+4. Seq2 icin per-class/per-motion hata dilimlerine gore hedefli tuning yap.
+5. Dashboard icin son bir "release showcase" ekrani ekleyip,
+   GitHub + LinkedIn paylasim paketini tek klasorde sabitle.
+
+====================================================================
+16) Kisa Sonuc
+====================================================================
+Atlas Aegis, kucuk hedef odakli aerial detection + tracking + risk banding
+problemini sadece model dogrulugu degil, robustluk, takip kararliligi, lead-time,
+latency, export ve yonetisim (legal+budget) katmanlariyla birlikte cozen,
+maliyeti kontrollu ve profesyonel bir Ar-Ge cikisi vermistir.

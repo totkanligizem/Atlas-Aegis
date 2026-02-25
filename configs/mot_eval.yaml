@@ -1,0 +1,6 @@
+gt_mot: data/mot/gt.txt
+pred_mot: data/mot/pred.txt
+gt_events: data/mot/gt_events_visdrone_val.json
+pred_events: reports/track_risk_visdrone_mot_val_report.json
+iou_match_threshold: 0.5
+output_report: reports/mot_eval_report.json

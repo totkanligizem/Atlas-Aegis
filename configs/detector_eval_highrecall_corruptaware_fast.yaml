@@ -1,0 +1,25 @@
+model: runs/detect/artifacts/detect/visdrone_highrecall_corruptaware_ep1/weights/best.pt
+data_root: data/processed/visdrone_det
+split: val
+tier: fast
+conditions:
+  - clean
+  - s3_blur
+  - s3_low_light
+  - s3_jpeg
+  - s3_fog
+conf: 0.001
+iou: 0.60
+imgsz: 960
+device: ""
+max_images: 120
+iou_match_threshold: 0.50
+small_object:
+  area_px2_lt: 1024
+  min_side_px_lt: 16
+gates:
+  clean_recall_small_min: 0.35
+  clean_recall_min: 0.45
+  s3_recall_small_drop_max: 0.25
+db_path: logs/metrics.duckdb
+output_report: reports/detector_eval_highrecall_corruptaware_fast_report.json

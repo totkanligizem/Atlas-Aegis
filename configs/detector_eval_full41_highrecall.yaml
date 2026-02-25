@@ -1,0 +1,61 @@
+model: runs/detect/artifacts/detect/visdrone_highrecall_full_ep1_cpu/weights/best.pt
+data_root: data/processed/visdrone_det
+split: val
+tier: full
+conditions:
+  - clean
+  - blur_s1
+  - blur_s2
+  - blur_s3
+  - blur_s4
+  - blur_s5
+  - low_light_s1
+  - low_light_s2
+  - low_light_s3
+  - low_light_s4
+  - low_light_s5
+  - jpeg_s1
+  - jpeg_s2
+  - jpeg_s3
+  - jpeg_s4
+  - jpeg_s5
+  - gauss_s1
+  - gauss_s2
+  - gauss_s3
+  - gauss_s4
+  - gauss_s5
+  - poisson_s1
+  - poisson_s2
+  - poisson_s3
+  - poisson_s4
+  - poisson_s5
+  - dropout_s1
+  - dropout_s2
+  - dropout_s3
+  - dropout_s4
+  - dropout_s5
+  - fog_s1
+  - fog_s2
+  - fog_s3
+  - fog_s4
+  - fog_s5
+  - downsample_s1
+  - downsample_s2
+  - downsample_s3
+  - downsample_s4
+  - downsample_s5
+conf: 0.001
+iou: 0.60
+imgsz: 960
+device: ""
+max_images: 120
+iou_match_threshold: 0.50
+small_object:
+  area_px2_lt: 1024
+  min_side_px_lt: 16
+gates:
+  clean_recall_small_min: 0.35
+  clean_recall_min: 0.45
+  s3_recall_small_drop_max: 0.25
+db_path: logs/metrics.duckdb
+output_report: reports/detector_eval_full41_highrecall_ep1_report.json

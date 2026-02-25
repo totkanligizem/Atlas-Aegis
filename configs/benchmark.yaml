@@ -1,0 +1,11 @@
+source: data/raw/uavdt/UAVDT/val/images
+dataset_key: uavdt
+model: weights/yolov8n.pt
+conf: 0.10
+iou: 0.70
+imgsz: 640
+device: ""
+max_frames: 40
+frame_stride: 5
+db_path: logs/metrics.duckdb
+output_report: reports/benchmark_report.json

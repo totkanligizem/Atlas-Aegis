@@ -1,0 +1,35 @@
+datasets:
+  visdrone2019_det:
+    allowed_research: true
+    allowed_commercial: false
+    attribution_required: true
+    notes: "Use for R&D only until explicit commercial permission is verified."
+  visdrone2019_mot:
+    allowed_research: true
+    allowed_commercial: false
+    attribution_required: true
+    notes: "Use for R&D only until explicit commercial permission is verified."
+  uavdt:
+    allowed_research: true
+    allowed_commercial: true
+    attribution_required: true
+    notes: "Check citation/attribution requirements before release."
+  dota:
+    allowed_research: true
+    allowed_commercial: false
+    attribution_required: true
+    notes: "Do not include in production training or model card as commercial source."
+  xview:
+    allowed_research: true
+    allowed_commercial: false
+    attribution_required: true
+    notes: "Treat as non-commercial unless explicit legal approval exists."
+  soda_a:
+    allowed_research: true
+    allowed_commercial: false
+    attribution_required: true
+    notes: "Treat as non-commercial unless explicit legal approval exists."
+policy:
+  enforce_split_between_rnd_and_production: true
+  require_legal_review_for_release: true
+  require_source_traceability: true

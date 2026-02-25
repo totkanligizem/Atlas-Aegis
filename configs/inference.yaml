@@ -1,0 +1,18 @@
+source: data/raw/uavdt/UAVDT/val/images
+dataset_key: uavdt
+model: weights/yolov8n.pt
+tracker: configs/trackers/bytetrack.yaml
+conf: 0.10
+iou: 0.70
+imgsz: 640
+device: ""
+max_frames: 0
+track_ttl_frames: 60
+risk_config: configs/risk.yaml
+output_jsonl: logs/track_risk.jsonl
+output_report: reports/track_risk_report.json
+roi:
+  x1: 0.20
+  y1: 0.20
+  x2: 0.80
+  y2: 0.80

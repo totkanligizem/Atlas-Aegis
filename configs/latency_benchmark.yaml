@@ -1,0 +1,34 @@
+source: data/manual/visdrone/VisDrone2019-MOT-val/sequences/uav0000086_00000_v
+dataset_key: visdrone2019_mot
+conf: 0.20
+iou: 0.60
+max_frames: 120
+frame_stride: 2
+warmup_frames: 5
+output_report: reports/latency_benchmark_report.json
+output_md: reports/latency_benchmark_report.md
+profiles:
+  - name: fast_cpu_yolov8n
+    model: weights/yolov8n.pt
+    imgsz: 640
+    device: cpu
+    target_fps: 20
+    target_latency_ms: 50
+    target_p95_latency_ms: 70
+    required: true
+  - name: highrecall_cpu_yolov8s
+    model: weights/yolov8s.pt
+    imgsz: 960
+    device: cpu
+    target_fps: 12
+    target_latency_ms: 80
+    target_p95_latency_ms: 120
+    required: true
+  - name: fast_mps_yolov8n
+    model: weights/yolov8n.pt
+    imgsz: 640
+    device: mps
+    target_fps: 20
+    target_latency_ms: 50
+    target_p95_latency_ms: 70
+    required: false
