@@ -1,5 +1,16 @@
 # Atlas Aegis: Robust Aerial Detection + MOT + Risk Banding (Local-First)
 
+## 0) Top Showcase (Video + 2 Key Visuals)
+
+### Demo Video
+[▶ atlas_aegis_track_risk_overlay.mp4](assets/screenshots/atlas_aegis_track_risk_overlay.mp4)
+
+### Detection + Tracking + Risk Banding
+![Detection + Tracking + Risk Banding](assets/screenshots/02_track_risk_overlay_frame.png)
+
+### Image Processing Pipeline (Corruption Modeling)
+![Image Processing Pipeline (Corruption Modeling)](assets/screenshots/01_processing_pipeline_grid.png)
+
 End-to-end R&D stack for small-object aerial perception:
 - detector training and robustness evaluation (YOLOv8n / YOLOv8s),
 - multi-object tracking with MOT metrics (MOTA/HOTA/AssA/DetA/IDSW),
